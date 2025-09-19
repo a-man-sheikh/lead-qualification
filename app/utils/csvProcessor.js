@@ -1,6 +1,58 @@
-const fs = require("fs");
-const csv = require("csv-parser");
+const csv = require('csv-parser');
+const fs = require('fs');
+const path = require('path');
 
+/**
+ * CSV Processor - Handles CSV file parsing and validation
+ */
+
+/**
+ * Process uploaded CSV file and extract lead data
+ */
+const processCSVFile = (filePath) => {
+  return new Promise((resolve, reject) => {
+    const leads = [];
+    const requiredColumns = ['name', 'role', 'company', 'industry', 'location'];
+    const optionalColumns = ['linkedin_bio'];
+    const allColumns = [...requiredColumns, ...optionalColumns];
+
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on('data', (row) => {
+        // Validate required columns
+        const missingColumns = requiredColumns.filter(col => !row[col] || row[col].trim() === '');
+        
+        if (missingColumns.length > 0) {
+          reject(new Error(`Missing required columns: ${missingColumns.join(', ')}`));
+          return;
+        }
+
+        // Create lead object with only expected columns
+        const lead = {};
+        allColumns.forEach(col => {
+          if (row[col]) {
+            lead[col] = row[col].trim();
+          }
+        });
+
+        leads.push(lead);
+      })
+      .on('end', () => {
+        if (leads.length === 0) {
+          reject(new Error('No valid leads found in CSV file'));
+          return;
+        }
+        resolve(leads);
+      })
+      .on('error', (error) => {
+        reject(new Error(`CSV processing error: ${error.message}`));
+      });
+  });
+};
+
+/**
+ * Validate CSV file structure before processing
+ */
 const validateCSVStructure = (filePath) => {
   return new Promise((resolve, reject) => {
     const requiredColumns = ['name', 'role', 'company', 'industry', 'location'];
@@ -46,25 +98,48 @@ const validateCSVStructure = (filePath) => {
   });
 };
 
-async function processCSVFile(filePath) {
-  const leads = [];
-  return new Promise((resolve, reject) => {
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (row) => leads.push(row))
-      .on("end", () => resolve(leads))
-      .on("error", reject);
+/**
+ * Generate CSV content from lead results
+ */
+const generateCSVFromLeads = (leads) => {
+  const headers = [
+    'name', 'role', 'company', 'industry', 'location', 
+    'linkedin_bio', 'intent', 'score', 'reasoning'
+  ];
+
+  const csvRows = [headers.join(',')];
+
+  leads.forEach(lead => {
+    const row = headers.map(header => {
+      let value = lead[header] || '';
+      // Escape commas and quotes in CSV
+      if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
+        value = `"${value.replace(/"/g, '""')}"`;
+      }
+      return value;
+    });
+    csvRows.push(row.join(','));
   });
-}
 
-function cleanupTempFile(filePath) {
-  if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-}
+  return csvRows.join('\n');
+};
 
-function generateCSVFromLeads(leads) {
-  const header = Object.keys(leads[0]).join(",");
-  const rows = leads.map((l) => Object.values(l).join(","));
-  return [header, ...rows].join("\n");
-}
+/**
+ * Clean up temporary files
+ */
+const cleanupTempFile = (filePath) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+  } catch (error) {
+    console.error('Error cleaning up temp file:', error);
+  }
+};
 
-module.exports = { validateCSVStructure, processCSVFile, cleanupTempFile, generateCSVFromLeads };
+module.exports = {
+  processCSVFile,
+  validateCSVStructure,
+  generateCSVFromLeads,
+  cleanupTempFile
+};
