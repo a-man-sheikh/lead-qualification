@@ -1,7 +1,12 @@
 const Lead = require("../models/Lead");
+const Offer = require("../models/Offer")
 const { processCSVFile, validateCSVStructure, cleanupTempFile } = require("../utils/csvProcessor");
+const {calculateRuleScore} =require("../services/scoringService")
+const aiService = require("../services/aiService")
 
-
+/**
+ * Upload CSV file with leads
+*/
 const uploadLeads = async (req, res) => {
   try {
     if (!req.file) {
@@ -30,5 +35,78 @@ const uploadLeads = async (req, res) => {
 };
 
 
+/**
+ * Score all uploaded leads
+ */
+const scoreLeads = async (req, res) => {
+  try {
+    // Check if offer exists
+    const offer = await Offer.findOne().sort({ createdAt: -1 });
+    if (!offer) {
+      return res.status(400).json({
+        success: false,
+        message: 'No offer found. Please create an offer first.'
+      });
+    }
 
-module.exports = { uploadLeads};
+    // Get all unscored leads
+    const leads = await Lead.find({ scoredAt: { $exists: false } });
+    
+    if (leads.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'No leads found to score. Please upload leads first.'
+      });
+    }
+
+    const scoredLeads = [];
+
+    // Process each lead
+    for (const lead of leads) {
+      try {
+        // Calculate rule-based score
+        const ruleResult = calculateRuleScore(lead, offer);
+        
+        // Get AI score
+        const aiResult = await aiService.classifyIntent(lead, offer);
+        
+        // Update lead with scores
+        lead.ruleScore = ruleResult.score;
+        lead.aiScore = aiResult.score;
+        lead.intent = aiResult.intent;
+        lead.reasoning = `${ruleResult.reasoning}; AI: ${aiResult.reasoning}`;
+        lead.scoredAt = new Date();
+        
+        await lead.save();
+        scoredLeads.push(lead);
+      } catch (error) {
+        console.error(`Error scoring lead ${lead.name}:`, error);
+        // Continue with other leads even if one fails
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      message: `Successfully scored ${scoredLeads.length} leads`,
+      data: {
+        count: scoredLeads.length,
+        leads: scoredLeads
+      }
+    });
+  } catch (error) {
+    console.error('Error scoring leads:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: error.message
+    });
+  }
+};
+
+
+
+module.exports = {
+  uploadLeads,
+  scoreLeads
+};
+
