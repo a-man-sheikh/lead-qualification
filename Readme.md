@@ -2,6 +2,8 @@
 
 A Node.js API for lead scoring and qualification using rule-based scoring and AI-powered intent classification.
 
+> **🌐 Live Demo:** [https://lead-qualification-production.up.railway.app/](https://lead-qualification-production.up.railway.app/)
+
 > **📹 Demo Video:** [Watch the API in action](https://www.loom.com/share/d5946f9317404075bbed8f660771ae4d?sid=2f2cdcfc-a6eb-487b-8221-5bcb22b20adc)
 
 > **⏱️ Performance Note:** The scoring API (`POST /api/score`) may take some time to complete as it calls the Google Gemini AI API for each lead to determine intent classification. Processing time depends on the number of leads being scored.
@@ -50,7 +52,7 @@ A Node.js API for lead scoring and qualification using rule-based scoring and AI
 
 **cURL:**
 ```bash
-curl -X POST http://localhost:5000/api/offer \
+curl -X POST https://lead-qualification-production.up.railway.app/api/offer \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Smart Lead Scoring Platform",
@@ -71,7 +73,7 @@ curl -X POST http://localhost:5000/api/offer \
 
 **Postman:**
 - Method: POST
-- URL: `http://localhost:5000/api/offer`
+- URL: `https://lead-qualification-production.up.railway.app/api/offer`
 - Headers: `Content-Type: application/json`
 - Body (raw JSON):
 ```json
@@ -97,13 +99,13 @@ curl -X POST http://localhost:5000/api/offer \
 
 **cURL:**
 ```bash
-curl -X POST http://localhost:5000/api/leads/upload \
+curl -X POST https://lead-qualification-production.up.railway.app/api/leads/upload \
   -F "file=@/path/to/your/leads.csv"
 ```
 
 **Postman:**
 - Method: POST
-- URL: `http://localhost:5000/api/leads/upload`
+- URL: `https://lead-qualification-production.up.railway.app/api/leads/upload`
 - Body: form-data
 - Key: `file`, Type: File, Value: Select your CSV file
 
@@ -119,12 +121,12 @@ Jane Smith,Marketing Manager,SalesPro,Marketing,New York,Digital marketing exper
 
 **cURL:**
 ```bash
-curl -X POST http://localhost:5000/api/score
+curl -X POST https://lead-qualification-production.up.railway.app/api/score
 ```
 
 **Postman:**
 - Method: POST
-- URL: `http://localhost:5000/api/score`
+- URL: `https://lead-qualification-production.up.railway.app/api/score`
 - No body required
 
 ### 4. Get Results
@@ -139,12 +141,12 @@ curl -X POST http://localhost:5000/api/score
 
 **cURL:**
 ```bash
-curl "http://localhost:5000/api/results?intent=High&minScore=50&sortBy=totalScore&sortOrder=desc"
+curl "https://lead-qualification-production.up.railway.app/api/results?intent=High&minScore=50&sortBy=totalScore&sortOrder=desc"
 ```
 
 **Postman:**
 - Method: GET
-- URL: `http://localhost:5000/api/results`
+- URL: `https://lead-qualification-production.up.railway.app/api/results`
 - Params: Add query parameters as needed
 
 ### 5. Export Results
@@ -152,12 +154,12 @@ curl "http://localhost:5000/api/results?intent=High&minScore=50&sortBy=totalScor
 
 **cURL:**
 ```bash
-curl -O http://localhost:5000/api/results/export
+curl -O https://lead-qualification-production.up.railway.app/api/results/export
 ```
 
 **Postman:**
 - Method: GET
-- URL: `http://localhost:5000/api/results/export`
+- URL: `https://lead-qualification-production.up.railway.app/api/results/export`
 - Response will be a downloadable CSV file
 
 ## Rule Logic & AI Prompts
